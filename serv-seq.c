@@ -22,17 +22,39 @@ char Nome[64];
 struct hostent *ptrDadosDoHost;
 int result;
 
+//------------------------------------------------------------
 void wait(void) {
     sleep(2);
 
     printf("[Cliente] Processo cliente comecou a rodar.\n");
 }
 
+//------------------------------------------------------------
 int main(void) {
     pthread_t thread;
     int err;
 
     err = pthread_create(&thread, NULL, wait, NULL);
+
+    for(i=1;i<5;i++)printf(EMPTYLINE);
+    printf("[Servidor] Servidor SEQ-SEQ entrando em funcionamento.\n    Usando a porta %d.\n",PORTA);
+
+    result = gethostname(Nome,sizeof(Nome));
+    printf("    gethostname:\n    result = %d , Nome : %s.\n",result,Nome);
+    ptrDadosDoHost = (struct hostent *)gethostbyname(Nome);
+    printf("Tamanho do nome: %d\n",ptrDadosDoHost->h_length);
+
+    sPassivo = socket(PF_INET,SOCK_STREAM,0);
+    if(sPassivo == -1){
+       perror("[Servidor] Erro na criacao do sock 1 do servidor: ");
+       exit(0);
+    }
+
+    enderServ1.sin_family = AF_INET;
+    enderServ1.sin_port   = htons(PORTA);
+    bcopy(ptrDadosDoHost->h_addr,
+          &enderServ1.sin_addr.s_addr, 
+          ptrDadosDoHost->h_length);
 
     if(bind(sPassivo,(struct sockaddr *)&enderServ1,sizeof(enderServ1))){
        perror("[Servidor] Erro no bind: ");
@@ -51,8 +73,11 @@ int main(void) {
             perror("[Servidor] Erro no Accept: ");
             exit(0);
          }
-         if(read(sAtivo,linha,80)==-1){
+         if (read(sAtivo,linha,80)==-1){
             perror("[Servidor] Erro no read: ");
+         if (err){
+            printf("[Servidor] Erro no listen: %d", err);
+            return 1;
          }else{
             printf("[Servidor] Recebeu: %s\n",linha);
             sleep(2);
